@@ -20,7 +20,7 @@ user_agent = 'Personal_App by Emotional-Egg-5809'
 reddit = praw.Reddit(client_id=client_id, client_secret=client_secret, user_agent=user_agent)
 
 # Define function to fetch Reddit comments
-def fetch_reddit_comments(query, limit=100):
+def fetch_reddit_comments(query, limit=20):
     comments = []
     for submission in reddit.subreddit("all").search(query, limit=limit):
         submission.comments.replace_more(limit=0)
