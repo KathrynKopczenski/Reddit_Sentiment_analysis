@@ -7,6 +7,7 @@ import pandas as pd
 from textblob import TextBlob
 import matplotlib.pyplot as plt
 import re
+import time
 
 # Access credentials from Streamlit Secrets
 client_id = st.secrets["client_id"]
@@ -76,58 +77,68 @@ if st.button("Analyze"):
         # Generate YouTube search link for the movie trailer
         trailer_link = f"https://www.youtube.com/results?search_query={user_input.replace(' ', '+')}+trailer"
         st.markdown(f"**Watch the trailer for '{user_input}' on [YouTube]({trailer_link})**")
-
-        # Define additional keywords related to the specific movie, if available
-        additional_keywords = ["character1", "character2", "director name"]  # Replace with actual keywords for the movie
         
-        # Fetch comments
-        comments = fetch_reddit_comments(user_input)
-        if comments:
-            # Filter comments based on the movie title and additional keywords
-            filtered_comments = filter_relevant_comments(comments, user_input, additional_keywords)
-            if filtered_comments:
-                # Data processing
-                clean_comments = [clean_text(comment) for comment in filtered_comments]
-                df = pd.DataFrame(clean_comments, columns=['Comment'])
-                df['Sentiment'] = df['Comment'].apply(analyze_sentiment)
+        # Show loading spinner and progress bar
+        with st.spinner("Fetching comments and analyzing sentiment..."):
+            progress_bar = st.progress(0)
+            
+            # Fetch comments
+            comments = fetch_reddit_comments(user_input)
+            progress_bar.progress(30)  # Update progress
+            
+            if comments:
+                # Define additional keywords related to the specific movie
+                additional_keywords = ["character1", "character2", "director name"]  # Customize for each movie
+                
+                # Filter comments based on the movie title and additional keywords
+                filtered_comments = filter_relevant_comments(comments, user_input, additional_keywords)
+                progress_bar.progress(60)  # Update progress
+                
+                if filtered_comments:
+                    # Data processing
+                    clean_comments = [clean_text(comment) for comment in filtered_comments]
+                    df = pd.DataFrame(clean_comments, columns=['Comment'])
+                    df['Sentiment'] = df['Comment'].apply(analyze_sentiment)
+                    progress_bar.progress(80)  # Update progress
 
-                # Calculate average sentiment
-                average_sentiment = df['Sentiment'].mean()
+                    # Calculate average sentiment
+                    average_sentiment = df['Sentiment'].mean()
+                    progress_bar.progress(100)  # Complete progress
 
-                # Display results
-                st.subheader("Sentiment Analysis Results")
-                st.write(f"Average Sentiment for '{user_input}': {average_sentiment:.2f}")
+                    # Display results
+                    st.subheader("Sentiment Analysis Results")
+                    st.write(f"Average Sentiment for '{user_input}': {average_sentiment:.2f}")
 
-                # Interpretation of the Average Sentiment Score
-                if average_sentiment > 0:
-                    st.write("The average sentiment score is positive, indicating that most users have a favorable opinion about this movie.")
-                elif average_sentiment < 0:
-                    st.write("The average sentiment score is negative, suggesting that most users have a less favorable view of this movie.")
+                    # Interpretation of the Average Sentiment Score
+                    if average_sentiment > 0:
+                        st.write("The average sentiment score is positive, indicating that most users have a favorable opinion about this movie.")
+                    elif average_sentiment < 0:
+                        st.write("The average sentiment score is negative, suggesting that most users have a less favorable view of this movie.")
+                    else:
+                        st.write("The average sentiment score is neutral, which means opinions are mixed or evenly balanced between positive and negative.")
+
+                    # Plot sentiment distribution
+                    st.subheader("Sentiment Distribution")
+                    plt.hist(df['Sentiment'], bins=20, color='skyblue', edgecolor='black')
+                    plt.title(f"Sentiment Distribution for '{user_input}'")
+                    plt.xlabel("Sentiment Score")
+                    plt.ylabel("Number of Comments")
+                    st.pyplot(plt.gcf())
+
+                    # Additional insights on sentiment distribution
+                    st.write("""
+                    - A high concentration of comments with positive sentiment indicates that the movie is generally well-received.
+                    - If there’s a mix of positive and negative comments, this may indicate a polarizing or controversial film.
+                    - A neutral distribution could mean that users are discussing factual information rather than expressing strong opinions.
+                    """)
+
+                    # Display sample comments
+                    st.subheader("Sample Comments")
+                    for comment in df['Comment'].sample(5):
+                        st.write(f"- {comment}")
                 else:
-                    st.write("The average sentiment score is neutral, which means opinions are mixed or evenly balanced between positive and negative.")
-
-                # Plot sentiment distribution
-                st.subheader("Sentiment Distribution")
-                plt.hist(df['Sentiment'], bins=20, color='skyblue', edgecolor='black')
-                plt.title(f"Sentiment Distribution for '{user_input}'")
-                plt.xlabel("Sentiment Score")
-                plt.ylabel("Number of Comments")
-                st.pyplot(plt.gcf())
-
-                # Additional insights on sentiment distribution
-                st.write("""
-                - A high concentration of comments with positive sentiment indicates that the movie is generally well-received.
-                - If there’s a mix of positive and negative comments, this may indicate a polarizing or controversial film.
-                - A neutral distribution could mean that users are discussing factual information rather than expressing strong opinions.
-                """)
-
-                # Display sample comments
-                st.subheader("Sample Comments")
-                for comment in df['Comment'].sample(5):
-                    st.write(f"- {comment}")
+                    st.write("No relevant comments found. Try a different keyword or movie title.")
             else:
-                st.write("No relevant comments found. Try a different keyword or movie title.")
-        else:
-            st.write("No comments found. Try a different keyword or movie title.")
+                st.write("No comments found. Try a different keyword or movie title.")
     else:
         st.write("Please enter a movie title or keyword.")
