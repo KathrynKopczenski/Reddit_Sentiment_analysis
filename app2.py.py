@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import streamlit as st
 import praw
 import pandas as pd
 from textblob import TextBlob
 import matplotlib.pyplot as plt
 from collections import Counter
+import re
 
 # Reddit API credentials 
 client_id = 'Itp99XIFIbTeNkKiFQuAuw'
@@ -19,10 +17,11 @@ user_agent = 'Personal_App by Emotional-Egg-5809'
 # Initialize Reddit API connection
 reddit = praw.Reddit(client_id=client_id, client_secret=client_secret, user_agent=user_agent)
 
-# Define function to fetch Reddit comments
+# Define function to fetch Reddit comments from the "movies" subreddit
 def fetch_reddit_comments(query, limit=20):
     comments = []
-    for submission in reddit.subreddit("all").search(query, limit=limit):
+    # Limit search to "movies" subreddit and use exact phrase matching
+    for submission in reddit.subreddit("movies").search(f'"{query}"', limit=limit):
         submission.comments.replace_more(limit=0)
         for comment in submission.comments.list():
             comments.append(comment.body)
@@ -30,12 +29,23 @@ def fetch_reddit_comments(query, limit=20):
 
 # Define function to clean text
 def clean_text(text):
-    return ' '.join(word for word in text.split() if word.isalnum())
+    # Remove URLs
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text)
+    # Remove special characters and digits
+    text = re.sub(r'[^A-Za-z\s]+', '', text)
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 # Define function to analyze sentiment
 def analyze_sentiment(text):
     blob = TextBlob(text)
     return blob.sentiment.polarity
+
+# Define function to filter comments based on relevant keywords
+def filter_relevant_comments(comments):
+    relevant_keywords = ["vivian", "edward", "shopping scene", "romantic comedy"]
+    return [comment for comment in comments if any(keyword in comment.lower() for keyword in relevant_keywords)]
 
 # Streamlit UI setup
 st.title("Reddit Sentiment Analysis on Movies")
@@ -49,32 +59,36 @@ if st.button("Analyze"):
         # Fetch comments
         comments = fetch_reddit_comments(user_input)
         if comments:
-            # Data processing
-            df = pd.DataFrame(comments, columns=['Comment'])
-            df['Cleaned_Comment'] = df['Comment'].apply(clean_text)
-            df['Sentiment'] = df['Cleaned_Comment'].apply(analyze_sentiment)
+            # Filter comments to improve relevance
+            filtered_comments = filter_relevant_comments(comments)
+            if filtered_comments:
+                # Data processing
+                clean_comments = [clean_text(comment) for comment in filtered_comments]
+                df = pd.DataFrame(clean_comments, columns=['Comment'])
+                df['Sentiment'] = df['Comment'].apply(analyze_sentiment)
 
-            # Calculate average sentiment
-            average_sentiment = df['Sentiment'].mean()
+                # Calculate average sentiment
+                average_sentiment = df['Sentiment'].mean()
 
-            # Display results
-            st.subheader("Sentiment Analysis Results")
-            st.write(f"Average Sentiment for '{user_input}': {average_sentiment:.2f}")
-            
-            # Plot sentiment distribution
-            st.subheader("Sentiment Distribution")
-            plt.hist(df['Sentiment'], bins=20, color='skyblue', edgecolor='black')
-            plt.title(f"Sentiment Distribution for '{user_input}'")
-            plt.xlabel("Sentiment Score")
-            plt.ylabel("Number of Comments")
-            st.pyplot(plt.gcf())
+                # Display results
+                st.subheader("Sentiment Analysis Results")
+                st.write(f"Average Sentiment for '{user_input}': {average_sentiment:.2f}")
+                
+                # Plot sentiment distribution
+                st.subheader("Sentiment Distribution")
+                plt.hist(df['Sentiment'], bins=20, color='skyblue', edgecolor='black')
+                plt.title(f"Sentiment Distribution for '{user_input}'")
+                plt.xlabel("Sentiment Score")
+                plt.ylabel("Number of Comments")
+                st.pyplot(plt.gcf())
 
-            # Display sample comments
-            st.subheader("Sample Comments")
-            for comment in df['Cleaned_Comment'].sample(5):
-                st.write(f"- {comment}")
+                # Display sample comments
+                st.subheader("Sample Comments")
+                for comment in df['Comment'].sample(5):
+                    st.write(f"- {comment}")
+            else:
+                st.write("No relevant comments found. Try a different keyword or movie title.")
         else:
             st.write("No comments found. Try a different keyword or movie title.")
     else:
         st.write("Please enter a movie title or keyword.")
-
