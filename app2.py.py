@@ -6,7 +6,6 @@ import praw
 import pandas as pd
 from textblob import TextBlob
 import matplotlib.pyplot as plt
-from collections import Counter
 import re
 
 # Reddit API credentials 
@@ -20,7 +19,6 @@ reddit = praw.Reddit(client_id=client_id, client_secret=client_secret, user_agen
 # Define function to fetch Reddit comments from the "movies" subreddit
 def fetch_reddit_comments(query, limit=20):
     comments = []
-    # Limit search to "movies" subreddit and use exact phrase matching
     for submission in reddit.subreddit("movies").search(f'"{query}"', limit=limit):
         submission.comments.replace_more(limit=0)
         for comment in submission.comments.list():
@@ -29,12 +27,9 @@ def fetch_reddit_comments(query, limit=20):
 
 # Define function to clean text
 def clean_text(text):
-    # Remove URLs
-    text = re.sub(r'http\S+|www\S+|https\S+', '', text)
-    # Remove special characters and digits
-    text = re.sub(r'[^A-Za-z\s]+', '', text)
-    # Remove extra whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text)  # Remove URLs
+    text = re.sub(r'[^A-Za-z\s]+', '', text)  # Remove special characters
+    text = re.sub(r'\s+', ' ', text).strip()  # Remove extra whitespace
     return text
 
 # Define function to analyze sentiment
@@ -42,7 +37,7 @@ def analyze_sentiment(text):
     blob = TextBlob(text)
     return blob.sentiment.polarity
 
-# Define function to filter comments based on relevant keywords
+# Define broader filtering based on word count and sentiment thresholds
 def filter_broad_comments(comments, min_words=5, sentiment_threshold=0.2):
     filtered_comments = []
     for comment in comments:
@@ -65,8 +60,8 @@ if st.button("Analyze"):
         # Fetch comments
         comments = fetch_reddit_comments(user_input)
         if comments:
-            # Filter comments to improve relevance
-            filtered_comments = filter_relevant_comments(comments)
+            # Broadly filter comments for relevance
+            filtered_comments = filter_broad_comments(comments)
             if filtered_comments:
                 # Data processing
                 clean_comments = [clean_text(comment) for comment in filtered_comments]
