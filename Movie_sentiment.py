@@ -8,10 +8,10 @@ from textblob import TextBlob
 import matplotlib.pyplot as plt
 import re
 
-# Reddit API credentials 
-client_id = 'Itp99XIFIbTeNkKiFQuAuw'
-client_secret = 'TaBqOZ9_HzrpkoYLW4rpvUKsJ2S3tQ'
-user_agent = 'Personal_App by Emotional-Egg-5809'
+# Access credentials from Streamlit Secrets
+client_id = st.secrets["client_id"]
+client_secret = st.secrets["client_secret"]
+user_agent = st.secrets["user_agent"]
 
 # Initialize Reddit API connection
 reddit = praw.Reddit(client_id=client_id, client_secret=client_secret, user_agent=user_agent)
