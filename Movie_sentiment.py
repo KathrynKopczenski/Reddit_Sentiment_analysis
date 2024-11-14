@@ -37,16 +37,19 @@ def analyze_sentiment(text):
     blob = TextBlob(text)
     return blob.sentiment.polarity
 
-# Define broader filtering based on word count and sentiment thresholds
-def filter_broad_comments(comments, min_words=5, sentiment_threshold=0.2):
-    filtered_comments = []
+# Define broader filtering based on word count, sentiment thresholds, and keyword matching
+def filter_relevant_comments(comments, movie_title, keywords=[], min_words=5, sentiment_threshold=0.2):
+    relevant_comments = []
     for comment in comments:
         # Check if comment is long enough and has significant sentiment
         word_count = len(comment.split())
         sentiment = analyze_sentiment(comment)
-        if word_count >= min_words and abs(sentiment) >= sentiment_threshold:
-            filtered_comments.append(comment)
-    return filtered_comments
+        
+        # Check if the comment contains the movie title or any additional keywords
+        if (word_count >= min_words and abs(sentiment) >= sentiment_threshold and
+            (movie_title.lower() in comment.lower() or any(keyword.lower() in comment.lower() for keyword in keywords))):
+            relevant_comments.append(comment)
+    return relevant_comments
 
 # Streamlit UI setup
 st.title("Reddit Sentiment Analysis on Movies")
@@ -70,11 +73,14 @@ user_input = st.text_input("Movie Title or Keyword:", "")
 
 if st.button("Analyze"):
     if user_input:
+        # Define additional keywords related to the specific movie, if available
+        additional_keywords = ["character1", "character2", "director name"]  # Replace with actual keywords for the movie
+        
         # Fetch comments
         comments = fetch_reddit_comments(user_input)
         if comments:
-            # Broadly filter comments for relevance
-            filtered_comments = filter_broad_comments(comments)
+            # Filter comments based on the movie title and additional keywords
+            filtered_comments = filter_relevant_comments(comments, user_input, additional_keywords)
             if filtered_comments:
                 # Data processing
                 clean_comments = [clean_text(comment) for comment in filtered_comments]
