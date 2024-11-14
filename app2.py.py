@@ -43,9 +43,15 @@ def analyze_sentiment(text):
     return blob.sentiment.polarity
 
 # Define function to filter comments based on relevant keywords
-def filter_relevant_comments(comments):
-    relevant_keywords = ["vivian", "edward", "shopping scene", "romantic comedy"]
-    return [comment for comment in comments if any(keyword in comment.lower() for keyword in relevant_keywords)]
+def filter_broad_comments(comments, min_words=5, sentiment_threshold=0.2):
+    filtered_comments = []
+    for comment in comments:
+        # Check if comment is long enough and has significant sentiment
+        word_count = len(comment.split())
+        sentiment = analyze_sentiment(comment)
+        if word_count >= min_words and abs(sentiment) >= sentiment_threshold:
+            filtered_comments.append(comment)
+    return filtered_comments
 
 # Streamlit UI setup
 st.title("Reddit Sentiment Analysis on Movies")
