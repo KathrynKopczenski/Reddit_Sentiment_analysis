@@ -50,7 +50,20 @@ def filter_broad_comments(comments, min_words=5, sentiment_threshold=0.2):
 
 # Streamlit UI setup
 st.title("Reddit Sentiment Analysis on Movies")
-st.write("Enter a movie title or keyword to analyze sentiment on Reddit.")
+
+# Introduction
+st.write("""
+Welcome to the Reddit Sentiment Analysis Dashboard! This tool allows you to analyze public sentiment around popular movies based on Reddit comments. Enter a movie title or keyword below to see an analysis of sentiment, including an average sentiment score, sentiment distribution, and sample comments.
+""")
+
+# Instructions for the User
+st.subheader("How to Use This Dashboard")
+st.write("""
+1. Enter a movie title or keyword in the input box below.
+2. Click the "Analyze" button to fetch Reddit comments related to the movie.
+3. View the sentiment results, including an average sentiment score and sentiment distribution.
+4. Scroll down to see sample comments for more context on how people are discussing this movie.
+""")
 
 # User input for movie title
 user_input = st.text_input("Movie Title or Keyword:", "")
@@ -74,7 +87,15 @@ if st.button("Analyze"):
                 # Display results
                 st.subheader("Sentiment Analysis Results")
                 st.write(f"Average Sentiment for '{user_input}': {average_sentiment:.2f}")
-                
+
+                # Interpretation of the Average Sentiment Score
+                if average_sentiment > 0:
+                    st.write("The average sentiment score is positive, indicating that most users have a favorable opinion about this movie.")
+                elif average_sentiment < 0:
+                    st.write("The average sentiment score is negative, suggesting that most users have a less favorable view of this movie.")
+                else:
+                    st.write("The average sentiment score is neutral, which means opinions are mixed or evenly balanced between positive and negative.")
+
                 # Plot sentiment distribution
                 st.subheader("Sentiment Distribution")
                 plt.hist(df['Sentiment'], bins=20, color='skyblue', edgecolor='black')
@@ -82,6 +103,13 @@ if st.button("Analyze"):
                 plt.xlabel("Sentiment Score")
                 plt.ylabel("Number of Comments")
                 st.pyplot(plt.gcf())
+
+                # Additional insights on sentiment distribution
+                st.write("""
+                - A high concentration of comments with positive sentiment indicates that the movie is generally well-received.
+                - If there’s a mix of positive and negative comments, this may indicate a polarizing or controversial film.
+                - A neutral distribution could mean that users are discussing factual information rather than expressing strong opinions.
+                """)
 
                 # Display sample comments
                 st.subheader("Sample Comments")
