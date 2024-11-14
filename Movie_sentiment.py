@@ -73,6 +73,10 @@ user_input = st.text_input("Movie Title or Keyword:", "")
 
 if st.button("Analyze"):
     if user_input:
+        # Generate YouTube search link for the movie trailer
+        trailer_link = f"https://www.youtube.com/results?search_query={user_input.replace(' ', '+')}+trailer"
+        st.markdown(f"**Watch the trailer for '{user_input}' on [YouTube]({trailer_link})**")
+
         # Define additional keywords related to the specific movie, if available
         additional_keywords = ["character1", "character2", "director name"]  # Replace with actual keywords for the movie
         
